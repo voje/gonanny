@@ -1,0 +1,5 @@
+# sec
+interval: 3
+
+# Simple database for the program
+tmp_file: "./tmp_file.txt"
