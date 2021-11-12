@@ -11,13 +11,14 @@ import (
 )
 
 type Config struct {
-	Interval uint   `yaml:"interval"`
-	TmpFile  string `yaml:"tmp_file"`
+	Interval          uint   `yaml:"interval"`
+	TmpFile           string `yaml:"tmp_file"`
+	DailyTimeLimitSec uint   `yaml:"daily_time_limit_sec"`
 }
 
 type State struct {
-	Started time.Time     `yaml:"started"`
-	Elapsed time.Duration `yaml:"elapsed"`
+	LastSeen      time.Time     `yaml:"last_seen"`
+	TimeAvailable time.Duration `yaml:"time_available"`
 }
 
 func ConfigFromFile(filePath string) (*Config, error) {
@@ -60,19 +61,23 @@ func (n *Nanny) StoreState() error {
 }
 
 func (n *Nanny) resetState() {
-	n.state.Started = time.Now()
-	n.state.Elapsed = time.Since(n.state.Started)
+	n.state.LastSeen = time.Now()
+	n.state.TimeAvailable = time.Duration(n.conf.DailyTimeLimitSec) * time.Second
+}
+
+func (n *Nanny) addDailyTime() {
+
 }
 
 func (n *Nanny) InitState() error {
 	if _, err := os.Stat(n.conf.TmpFile); errors.Is(err, os.ErrNotExist) {
 		n.resetState()
+		n.addDailyTime()
 		err := n.StoreState()
 		if err != nil {
 			return err
 		}
 	} else {
-		// TODO: handle new day (reset state)
 		_, err := n.GetPreviousState()
 		if err != nil {
 			return err
