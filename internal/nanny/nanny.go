@@ -1,7 +1,6 @@
 package nanny
 
 import (
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -15,8 +14,7 @@ type Nanny struct {
 	TickIntervalSec    time.Duration
 	DbFilePath         string
 
-	DbFile *os.File
-	state  *State
+	state *State
 }
 
 func NewNanny(c *Config) (*Nanny, error) {
