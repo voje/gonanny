@@ -25,11 +25,14 @@ func main() {
 	app.Action = func(c *cli.Context) error {
 		log.Info("App started!")
 		log.Infof("Reading config from: %s", c.String("config"))
-		conf, err := nanny.ConfigFromFile(c.String("config"))
+		conf, err := nanny.ReadConfigFromFile(c.String("config"))
 		if err != nil {
 			log.Fatal(err)
 		}
-		nannyApp := nanny.NewNanny(conf)
+		nannyApp, err := nanny.NewNanny(conf)
+		if err != nil {
+			log.Fatal(err)
+		}
 		err = nannyApp.Run()
 		if err != nil {
 			log.Fatal(err)
