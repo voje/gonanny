@@ -8,9 +8,9 @@ import (
 
 type Nanny struct {
 	// Values from config
-	DailyTimeTo        time.Time
 	DailyTimeFrom      time.Time
-	DailyTimeAmountSec time.Duration
+	DailyTimeTo        time.Time
+	DailyTimeAmountSec float64
 	TickIntervalSec    time.Duration
 	DbFilePath         string
 
@@ -26,11 +26,23 @@ func NewNanny(c *Config) (*Nanny, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = n.initState()
+	err = n.initState(time.Now())
 	if err != nil {
 		return nil, err
 	}
 	return n, nil
+}
+
+func (n *Nanny) withinAllowedTimeInterval(currentTime time.Time) bool {
+	if currentTime.After(n.DailyTimeFrom) && currentTime.Before(n.DailyTimeTo) {
+		return true
+	}
+	return false
+}
+
+func (n *Nanny) suspendUser() {
+	n.storeState(time.Now())
+	log.Info("Shutting down! TODO")
 }
 
 func (n *Nanny) Run() error {
@@ -43,7 +55,12 @@ func (n *Nanny) Run() error {
 		case <-ticker.C:
 			log.Info("Tick")
 
-			// n.CheckTimeDiff()
+			n.addDailyTime(time.Now())
+
+			if n.state.AvailableTimeSec <= 0 ||
+				!n.withinAllowedTimeInterval(time.Now()) {
+				n.suspendUser()
+			}
 		}
 	}
 }

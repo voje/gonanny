@@ -13,14 +13,14 @@ import (
 // State contains all data that should be persisted
 // between program restarts
 type State struct {
-	AvailableTimeSec time.Duration `yaml:"available_time_sec"`
-	LastUpdated      time.Time     `yaml:"lastUpdated"`
+	AvailableTimeSec float64   `yaml:"available_time_sec"`
+	LastUpdated      time.Time `yaml:"lastUpdated"`
 }
 
 // initState creates a new state and populates it with init values or reads
 // state from an existing file
 // Keeps an open file descriptor
-func (n *Nanny) initState() (err error) {
+func (n *Nanny) initState(currentTime time.Time) (err error) {
 	if _, err := os.Stat(n.DbFilePath); errors.Is(err, os.ErrNotExist) {
 		// File doesn't exist; initialize
 		log.Infof("Initializing file: %s", n.DbFilePath)
@@ -36,6 +36,7 @@ func (n *Nanny) initState() (err error) {
 		}
 		// On first init, fund the user with some playtime
 		n.state.AvailableTimeSec = n.DailyTimeAmountSec
+		n.state.LastUpdated = currentTime
 	} else {
 		// Read previous state
 		yamlBytes, err := os.ReadFile(n.DbFilePath)
@@ -47,18 +48,25 @@ func (n *Nanny) initState() (err error) {
 			log.Fatal(err)
 		}
 	}
-	n.state.LastUpdated = time.Now()
-	err = n.storeState()
 	if err != nil {
 		log.Fatal(err)
 	}
 	return nil
 }
 
-func (n *Nanny) storeState() error {
-	log.Printf("state: %+v\n", n.state)
+func (n *Nanny) addDailyTime(currentTime time.Time) {
+	daysSinceLastLogin := currentTime.Sub(n.state.LastUpdated).Hours() / 24
+	nSec := daysSinceLastLogin * float64(n.DailyTimeAmountSec)
+	log.Infof("Last logged in %f days ago, adding %f seconds.",
+		daysSinceLastLogin, nSec,
+	)
+	n.state.AvailableTimeSec += nSec
+	n.state.LastUpdated = currentTime
+}
+
+func (n *Nanny) storeState(currentTime time.Time) error {
+	n.state.LastUpdated = currentTime
 	yamlBytes, err := yaml.Marshal(*n.state)
-	log.Printf("marshalled: %v\n", yamlBytes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,29 +76,3 @@ func (n *Nanny) storeState() error {
 	}
 	return nil
 }
-
-/*
-func (n *Nanny) resetState() {
-	n.state.LastSeen = time.Now()
-	n.state.TimeAvailable = time.Duration(n.conf.DailyTimeLimitSec) * time.Second
-}
-
-func (n *Nanny) addDailyTime() {
-
-}
-
-
-func (n *Nanny) GetPreviousState() (*State, error) {
-	// Read data from existing timer
-	prevState := &State{}
-	bytes, err := ioutil.ReadFile(n.conf.TmpFile)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(bytes, prevState)
-	if err != nil {
-		return nil, err
-	}
-	return prevState, nil
-}
-*/
