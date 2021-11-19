@@ -36,6 +36,7 @@ func (n *Nanny) initState(currentTime time.Time) (err error) {
 		}
 		// On first init, fund the user with some playtime
 		n.state.AvailableTimeSec = n.DailyTimeAmountSec
+		log.Infof("Initializing AvailableTimeSec: %f", n.state.AvailableTimeSec)
 		n.state.LastUpdated = currentTime
 	} else {
 		// Read previous state

@@ -33,8 +33,17 @@ func NewNanny(c *Config) (*Nanny, error) {
 	return n, nil
 }
 
+func daySeconds(t time.Time) int {
+	year, month, day := t.Date()
+	t2 := time.Date(year, month, day, 0, 0, 0, 0, t.Location())
+	return int(t.Sub(t2).Seconds())
+}
+
 func (n *Nanny) withinAllowedTimeInterval(currentTime time.Time) bool {
-	if currentTime.After(n.DailyTimeFrom) && currentTime.Before(n.DailyTimeTo) {
+	fromSec := daySeconds(n.DailyTimeFrom)
+	toSec := daySeconds(n.DailyTimeTo)
+	currentSec := daySeconds(currentTime)
+	if currentSec >= fromSec && currentSec <= toSec {
 		return true
 	}
 	return false
