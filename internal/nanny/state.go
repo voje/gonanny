@@ -13,7 +13,7 @@ import (
 // State contains all data that should be persisted
 // between program restarts
 type State struct {
-	AvailableTimeSec float64   `yaml:"available_time_sec"`
+	AvailableTimeSec int       `yaml:"available_time_sec"`
 	LastUpdated      time.Time `yaml:"lastUpdated"`
 }
 
@@ -23,7 +23,7 @@ type State struct {
 func (n *Nanny) initState(currentTime time.Time) (err error) {
 	if _, err := os.Stat(n.DbFilePath); errors.Is(err, os.ErrNotExist) {
 		// File doesn't exist; initialize
-		log.Infof("Initializing file: %s", n.DbFilePath)
+		log.Infof("First initialization, creating file: %s", n.DbFilePath)
 		file, err := os.Create(n.DbFilePath)
 		if err != nil {
 			log.Fatal(err)
@@ -36,9 +36,10 @@ func (n *Nanny) initState(currentTime time.Time) (err error) {
 		}
 		// On first init, fund the user with some playtime
 		n.state.AvailableTimeSec = n.DailyTimeAmountSec
-		log.Infof("Initializing AvailableTimeSec: %f", n.state.AvailableTimeSec)
+		log.Infof("Setting inital AvailableTimeSec: %d", n.state.AvailableTimeSec)
 		n.state.LastUpdated = currentTime
 	} else {
+		log.Infof("Initializing from existing state file: %s", n.DbFilePath)
 		// Read previous state
 		yamlBytes, err := os.ReadFile(n.DbFilePath)
 		if err != nil {
@@ -55,16 +56,8 @@ func (n *Nanny) initState(currentTime time.Time) (err error) {
 	return nil
 }
 
-func (n *Nanny) addDailyTime(currentTime time.Time) {
-	daysSinceLastLogin := currentTime.Sub(n.state.LastUpdated).Hours() / 24
-	nSec := daysSinceLastLogin * float64(n.DailyTimeAmountSec)
-	log.Infof("Last logged in %f days ago, adding %f seconds.",
-		daysSinceLastLogin, nSec,
-	)
-	n.state.AvailableTimeSec += nSec
-	n.state.LastUpdated = currentTime
-}
-
+// storeState sets LastUpdated to currentTime (should be time.Now() when not testing).
+// Stores state to file.
 func (n *Nanny) storeState(currentTime time.Time) error {
 	n.state.LastUpdated = currentTime
 	yamlBytes, err := yaml.Marshal(*n.state)

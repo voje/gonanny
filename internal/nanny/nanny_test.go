@@ -59,16 +59,24 @@ func TestNewNannyExistingDbFile(t *testing.T) {
 
 func TestAddDailytime(t *testing.T) {
 	config := testConfig
+	config.DailyTimeAmountSec = 30
 	os.Remove(config.DbFilePath)
-	n, err := NewNanny(&config)
+	n, _ := NewNanny(&config)
 	// Store state, simulate 2 days ago
-	n.storeState(time.Now().Add(-time.Hour * 48))
-	_ = n
+	// TODO CREATE CUSTON TIMES, DON'T USE TIME.nOW
+	n.storeState(time.Date(2021, 11, 7, 0, 0, 0, 0, time.UTC))
+	// Destroy instance
 	n = nil
-	n, err = NewNanny(&config)
-	n.addDailyTime(time.Now())
-	t.Logf("AvailablePlayTime: %f", n.state.AvailableTimeSec)
-	assert.NoError(t, err)
+
+	// Create new instance that reads state from file
+	// Daily time should be 30 (from init)
+	n, _ = NewNanny(&config)
+	assert.Equal(t, int(30), n.state.AvailableTimeSec)
+
+	// Add daily time 2 days after first init.
+	n.addDailyTime(time.Date(2021, 11, 9, 0, 0, 0, 0, time.UTC))
+	t.Logf("AvailablePlayTime: %d", n.state.AvailableTimeSec)
+	assert.Equal(t, int(90), n.state.AvailableTimeSec)
 }
 
 func TestOutsieTimeLimits(t *testing.T) {

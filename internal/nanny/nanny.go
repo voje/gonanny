@@ -10,8 +10,8 @@ type Nanny struct {
 	// Values from config
 	DailyTimeFrom      time.Time
 	DailyTimeTo        time.Time
-	DailyTimeAmountSec float64
-	TickIntervalSec    time.Duration
+	DailyTimeAmountSec int
+	TickIntervalSec    int
 	DbFilePath         string
 
 	state *State
@@ -46,7 +46,21 @@ func (n *Nanny) withinAllowedTimeInterval(currentTime time.Time) bool {
 	if currentSec >= fromSec && currentSec <= toSec {
 		return true
 	}
+	log.Infof("%s is outside allowed time interval.", currentTime)
 	return false
+}
+
+// addDailyTime checks the amount of days since (var state.LastUpdated) and
+// adds days * n.DailyAmountSec to n.AvailableTimeSec
+func (n *Nanny) addDailyTime(currentTime time.Time) {
+	daysSinceLastLogin := int(currentTime.Sub(n.state.LastUpdated).Hours() / 24)
+	nSec := daysSinceLastLogin * n.DailyTimeAmountSec
+	log.Infof("Last logged in %d days ago, adding %d seconds.",
+		daysSinceLastLogin, nSec,
+	)
+	n.state.AvailableTimeSec += nSec
+	n.state.LastUpdated = currentTime
+	n.storeState(time.Now())
 }
 
 func (n *Nanny) suspendUser() {
@@ -54,17 +68,26 @@ func (n *Nanny) suspendUser() {
 	log.Info("Shutting down! TODO")
 }
 
+func (n *Nanny) subtractAvailableTime(nsec int) {
+	n.state.AvailableTimeSec -= nsec
+	if n.state.AvailableTimeSec < 0 {
+		n.state.AvailableTimeSec = 0
+	}
+	n.storeState(time.Now())
+}
+
 func (n *Nanny) Run() error {
 	// Init nanny
+	n.addDailyTime(time.Now())
 
 	// Start ticking
-	ticker := time.NewTicker(time.Duration(n.TickIntervalSec))
+	ticker := time.NewTicker(time.Duration(n.TickIntervalSec) * time.Second)
 	for {
 		select {
 		case <-ticker.C:
-			log.Info("Tick")
-
-			n.addDailyTime(time.Now())
+			n.subtractAvailableTime(n.TickIntervalSec)
+			log.Infof("Available time in seconds: %d", n.state.AvailableTimeSec)
+			n.storeState(time.Now())
 
 			if n.state.AvailableTimeSec <= 0 ||
 				!n.withinAllowedTimeInterval(time.Now()) {

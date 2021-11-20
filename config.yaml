@@ -1,5 +1,7 @@
-# sec
-interval: 3
-
-# Simple database for the program
-tmp_file: "./tmp_file.txt"
+# min: 00:00
+daily_time_from: "08:00"
+# max: 23:59
+daily_time_to: "23:59"
+daily_time_amount_sec: 10
+tick_interval_sec: 3
+db_file_path: "./test_db.yaml"

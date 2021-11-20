@@ -9,11 +9,11 @@ import (
 
 // Config corresponds to the config.yaml file
 type Config struct {
-	DailyTimeFrom      string  `yaml:"from_time"`
-	DailyTimeTo        string  `yaml:"daily_time_to"`
-	DailyTimeAmountSec float64 `yaml:"daily_time_amount_sec"`
-	TickIntervalSec    float64 `yaml:"tick_interval_sec"`
-	DbFilePath         string  `yaml:"db_file_path"`
+	DailyTimeFrom      string `yaml:"daily_time_from"`
+	DailyTimeTo        string `yaml:"daily_time_to"`
+	DailyTimeAmountSec int    `yaml:"daily_time_amount_sec"`
+	TickIntervalSec    int    `yaml:"tick_interval_sec"`
+	DbFilePath         string `yaml:"db_file_path"`
 }
 
 func ReadConfigFromFile(filePath string) (*Config, error) {
@@ -39,7 +39,7 @@ func (n *Nanny) applyConfig(c *Config) error {
 		return err
 	}
 	n.DailyTimeAmountSec = c.DailyTimeAmountSec
-	n.TickIntervalSec = time.Duration(c.TickIntervalSec) * time.Second
+	n.TickIntervalSec = c.TickIntervalSec
 	n.DbFilePath = c.DbFilePath
 	return nil
 }
