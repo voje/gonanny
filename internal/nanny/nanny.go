@@ -63,11 +63,6 @@ func (n *Nanny) addDailyTime(currentTime time.Time) {
 	n.storeState(time.Now())
 }
 
-func (n *Nanny) suspendUser() {
-	n.storeState(time.Now())
-	log.Info("Shutting down! TODO")
-}
-
 func (n *Nanny) subtractAvailableTime(nsec int) {
 	n.state.AvailableTimeSec -= nsec
 	if n.state.AvailableTimeSec < 0 {
@@ -80,6 +75,9 @@ func (n *Nanny) Run() error {
 	// Init nanny
 	n.addDailyTime(time.Now())
 
+	// Run http server that displays app info to the user
+	go n.runServer()
+
 	// Start ticking
 	ticker := time.NewTicker(time.Duration(n.TickIntervalSec) * time.Second)
 	for {
@@ -91,7 +89,8 @@ func (n *Nanny) Run() error {
 
 			if n.state.AvailableTimeSec <= 0 ||
 				!n.withinAllowedTimeInterval(time.Now()) {
-				n.suspendUser()
+				n.systemMessage()
+				n.systemShutdown()
 			}
 		}
 	}
