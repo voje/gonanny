@@ -13,6 +13,7 @@ type Nanny struct {
 	DailyTimeAmountSec int
 	TickIntervalSec    int
 	DbFilePath         string
+	httpPort           int
 
 	state *State
 }

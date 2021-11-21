@@ -14,6 +14,7 @@ type Config struct {
 	DailyTimeAmountSec int    `yaml:"daily_time_amount_sec"`
 	TickIntervalSec    int    `yaml:"tick_interval_sec"`
 	DbFilePath         string `yaml:"db_file_path"`
+	HttpPort           int    `yaml:"http_port"`
 }
 
 func ReadConfigFromFile(filePath string) (*Config, error) {
@@ -41,5 +42,9 @@ func (n *Nanny) applyConfig(c *Config) error {
 	n.DailyTimeAmountSec = c.DailyTimeAmountSec
 	n.TickIntervalSec = c.TickIntervalSec
 	n.DbFilePath = c.DbFilePath
+	if c.HttpPort == 0 {
+		c.HttpPort = 8544
+	}
+	n.httpPort = c.HttpPort
 	return nil
 }
