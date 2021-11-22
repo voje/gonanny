@@ -1,25 +1,39 @@
 package nanny
 
 import (
+	"fmt"
 	"os/exec"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func (n *Nanny) systemMessage() {
-	command := "notify-send -t 3000 -i face-smile 'The First Notification' 'Hello <b>World</b>'"
-	cmd := exec.Command(command)
+func (n *Nanny) systemMessage(msg string) {
+	cmd := exec.Command(
+		"notify-send",
+		"-t",
+		"3000",
+		"-i",
+		"face-smile",
+		"'The First Notification'",
+		fmt.Sprintf("'%s'", msg),
+	)
 	err := cmd.Run()
 	if err != nil {
-		log.Infof("err: %s Command failed: %s", err, command)
+		log.Error(err)
 	}
 }
 
 func (n *Nanny) systemShutdown() {
-	command := "shutdown -h +1"
-	cmd := exec.Command(command)
+	nsec := 60
+	log.Infof("Shutting down in %d seconds.", nsec)
+	time.Sleep(time.Duration(nsec) * time.Second)
+	cmd := exec.Command(
+		"shutdown",
+		"now",
+	)
 	err := cmd.Run()
 	if err != nil {
-		log.Infof("err: %s Command failed: %s", err, command)
+		log.Error(err)
 	}
 }

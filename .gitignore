@@ -1,3 +1,6 @@
 **/test_files/
 !**/test_files/.gitkeep
 **/test_db.yaml
+
+# Binary
+gonanny

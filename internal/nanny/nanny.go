@@ -56,12 +56,14 @@ func (n *Nanny) withinAllowedTimeInterval(currentTime time.Time) bool {
 func (n *Nanny) addDailyTime(currentTime time.Time) {
 	daysSinceLastLogin := int(currentTime.Sub(n.state.LastUpdated).Hours() / 24)
 	nSec := daysSinceLastLogin * n.DailyTimeAmountSec
-	log.Infof("Last logged in %d days ago, adding %d seconds.",
-		daysSinceLastLogin, nSec,
-	)
-	n.state.AvailableTimeSec += nSec
+	if nSec > 0 {
+		log.Infof("Last logged in %d days ago, adding %d seconds.",
+			daysSinceLastLogin, nSec,
+		)
+		n.state.AvailableTimeSec += nSec
+	}
 	n.state.LastUpdated = currentTime
-	n.storeState(time.Now())
+	n.storeState(currentTime)
 }
 
 func (n *Nanny) subtractAvailableTime(nsec int) {
@@ -84,13 +86,14 @@ func (n *Nanny) Run() error {
 	for {
 		select {
 		case <-ticker.C:
+			n.addDailyTime(time.Now())
 			n.subtractAvailableTime(n.TickIntervalSec)
-			log.Infof("Available time in seconds: %d", n.state.AvailableTimeSec)
 			n.storeState(time.Now())
+			log.Infof("Available time in seconds: %d", n.state.AvailableTimeSec)
 
 			if n.state.AvailableTimeSec <= 0 ||
 				!n.withinAllowedTimeInterval(time.Now()) {
-				n.systemMessage()
+				n.systemMessage("Shutting down!")
 				n.systemShutdown()
 			}
 		}
