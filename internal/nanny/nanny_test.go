@@ -79,6 +79,20 @@ func TestAddDailytime(t *testing.T) {
 	assert.Equal(t, int(90), n.state.AvailableTimeSec)
 }
 
+func TestAddDailytime1(t *testing.T) {
+	config := testConfig
+	config.DailyTimeAmountSec = 30
+	os.Remove(config.DbFilePath)
+	n, _ := NewNanny(&config)
+	n.storeState(time.Date(2021, 11, 7, 20, 0, 0, 0, time.UTC))
+
+	// Interval betwen two days smaller than 24 hours should
+	// trigger adding daily time
+	n.addDailyTime(time.Date(2021, 11, 8, 6, 0, 0, 0, time.UTC))
+	t.Logf("AvailablePlayTime: %d", n.state.AvailableTimeSec)
+	assert.Equal(t, int(60), n.state.AvailableTimeSec)
+}
+
 func TestOutsieTimeLimits(t *testing.T) {
 	config := testConfig
 	config.DailyTimeFrom = "08:30"

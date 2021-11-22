@@ -1,6 +1,7 @@
 package nanny
 
 import (
+	"math"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -51,10 +52,17 @@ func (n *Nanny) withinAllowedTimeInterval(currentTime time.Time) bool {
 	return false
 }
 
-// addDailyTime checks the amount of days since (var state.LastUpdated) and
-// adds days * n.DailyAmountSec to n.AvailableTimeSec
+// addDailyTime checks the amount of days since (var state.LastUpdated).
+// In case of same calendar day, do nothing.
+// In case of different days, calculate the difference and round up.
 func (n *Nanny) addDailyTime(currentTime time.Time) {
-	daysSinceLastLogin := int(currentTime.Sub(n.state.LastUpdated).Hours() / 24)
+	defer n.storeState(currentTime)
+	lastUpdatedDay := n.state.LastUpdated.Format("2")
+	currentDay := currentTime.Format("2")
+	if lastUpdatedDay == currentDay {
+		return
+	}
+	daysSinceLastLogin := int(math.Ceil(currentTime.Sub(n.state.LastUpdated).Hours() / 24))
 	nSec := daysSinceLastLogin * n.DailyTimeAmountSec
 	if nSec > 0 {
 		log.Infof("Last logged in %d days ago, adding %d seconds.",
@@ -62,8 +70,6 @@ func (n *Nanny) addDailyTime(currentTime time.Time) {
 		)
 		n.state.AvailableTimeSec += nSec
 	}
-	n.state.LastUpdated = currentTime
-	n.storeState(currentTime)
 }
 
 func (n *Nanny) subtractAvailableTime(nsec int) {
